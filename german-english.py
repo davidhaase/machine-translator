@@ -1,8 +1,5 @@
 import string
 import re
-# from pickle import dump
-# from pickle import load
-from numpy import array
 
 from unicodedata import normalize
 
@@ -26,9 +23,12 @@ from keras.layers import RepeatVector
 from keras.layers import TimeDistributed
 from keras.callbacks import ModelCheckpoint
 
-from utils import S3Bucket
+from utils import S3Bucket, Sentences
 
 s3 = S3Bucket()
+
+
+
 
 # load doc into memory
 def load_doc(filename):
@@ -94,7 +94,7 @@ pairs = to_pairs(doc)
 # clean sentences
 clean_pairs = clean_pairs(pairs)
 # save clean pairs to file
-save_clean_data(clean_pairs, 'english-german.pkl')
+save_clean_data(clean_pairs, 'pickles/english-german.pkl')
 # spot check
 for i in range(100):
     print('[%s] => [%s]' % (clean_pairs[i,0], clean_pairs[i,1]))
@@ -102,7 +102,7 @@ for i in range(100):
 
 
 # load dataset
-raw_dataset = load_clean_sentences('english-german.pkl')
+raw_dataset = load_clean_sentences('pickles/english-german.pkl')
 
 # reduce dataset size
 n_sentences = 10000
@@ -112,18 +112,18 @@ shuffle(dataset)
 # split into train/test
 train, test = dataset[:9000], dataset[9000:]
 # save
-save_clean_data(dataset, 'english-german-both.pkl')
-save_clean_data(train, 'english-german-train.pkl')
-save_clean_data(test, 'english-german-test.pkl')
+save_clean_data(dataset, 'pickles/english-german-both.pkl')
+save_clean_data(train, 'pickles/english-german-train.pkl')
+save_clean_data(test, 'pickles/english-german-test.pkl')
 
 # load a clean dataset
 # def load_clean_sentences(filename):
 #     return load(open(filename, 'rb'))
 
 # load datasets
-dataset = load_clean_sentences('english-german-both.pkl')
-train = load_clean_sentences('english-german-train.pkl')
-test = load_clean_sentences('english-german-test.pkl')
+dataset = load_clean_sentences('pickles/english-german-both.pkl')
+train = load_clean_sentences('pickles/english-german-train.pkl')
+test = load_clean_sentences('pickles/english-german-test.pkl')
 
 # fit a tokenizer
 def create_tokenizer(lines):
@@ -257,9 +257,9 @@ def evaluate_model(model, tokenizer, sources, raw_dataset):
 	print('BLEU-4: %f' % corpus_bleu(actual, predicted, weights=(0.25, 0.25, 0.25, 0.25)))
 
 # load datasets
-dataset = load_clean_sentences('english-german-both.pkl')
-train = load_clean_sentences('english-german-train.pkl')
-test = load_clean_sentences('english-german-test.pkl')
+dataset = load_clean_sentences('pickles/english-german-both.pkl')
+train = load_clean_sentences('pickles/english-german-train.pkl')
+test = load_clean_sentences('pickles/english-german-test.pkl')
 # prepare english tokenizer
 eng_tokenizer = create_tokenizer(dataset[:, 0])
 eng_vocab_size = len(eng_tokenizer.word_index) + 1
@@ -273,7 +273,7 @@ trainX = encode_sequences(ger_tokenizer, ger_length, train[:, 1])
 testX = encode_sequences(ger_tokenizer, ger_length, test[:, 1])
 
 # load model
-model = load_model('model.h5')
+model = load_model('models/model.h5')
 # test on some training sequences
 print('train')
 evaluate_model(model, eng_tokenizer, trainX, train)
