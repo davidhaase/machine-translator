@@ -1,25 +1,28 @@
 from flask import Flask, render_template, request
+from translator_new import Translator
+
 app = Flask(__name__)
 
 @app.route('/')
 def home_screen():
-   return render_template('index.html', translation='')
+    return render_template('index.html', translation='')
 
 
 @app.route('/result',methods = ['POST', 'GET'])
 def result():
-   if request.method == 'POST':
-      result = request.form
-      return render_template('index.html', translation = get_translation(result))
+    if request.method == 'POST':
+        result = request.form
+        for item in result.items():
+            key, value = item
+        prediction, bleu_scores = get_translation(value)
+        return render_template('index.html', input_text=prediction['input_text'], translation=prediction['translation'], bleu_scores=bleu_scores)
 
-def get_translation(input_text):
-    translated = 'bonjour, le monde!\nbonjour, le monde!\nbonjour, le monde!\nbonjour, le monde!\nbonjour, le monde!\nbonjour, le monde!\nbonjour, le monde!\nbonjour, le monde!\nbonjour, le monde!\n'
-    output = 'You entered: ' + str(input_text.items()) + '\n' + translated
-
-    return output
+def get_translation(input):
+    German = Translator()
+    return German.translate(input)
 
 if __name__ == '__main__':
-   app.run(debug = True)
+    app.run(debug = True)
 
 # @app.route('/')
 # def hello_world():

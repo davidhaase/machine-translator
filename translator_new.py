@@ -26,8 +26,11 @@ from utils import S3Bucket
 
 class Model():
     def __init__(self, source_lang, target_lang):
-        self.source_path = ''
-        self.prefix = source_lang + '2' + target_lang
+        prefix = source_lang + '_to_' + target_lang
+        self.cache_path = 'models/' + prefix + '/'
+        if not os.path.isdir(self.cache_path + 'pickles/'):
+            os.makedirs(self.cache_path + 'pickles/')
+        self.model = None
         self.source_lang= source_lang
         self.source_tokenizer = None
         self.source_word_count = 0
@@ -39,11 +42,11 @@ class Model():
         self.raw_data = []
         self.dataset = []
         self.clean_data = []
-        self.clean_data_file = 'pickles/' + self.prefix + '_sentence_pairs.pkl'
+        self.clean_data_file = self.cache_path + 'pickles/sentence_pairs.pkl'
         self.train = []
-        self.train_file = 'pickles/' + self.prefix + '_train.pkl'
+        self.train_file = self.cache_path + 'pickles/train.pkl'
         self.test = []
-        self.test_file = 'pickles/' + self.prefix + '_test.pkl'
+        self.test_file = self.cache_path + 'pickles/test.pkl'
         self.train_X = None
         self.train_y = None
         self.test_X = None
@@ -106,6 +109,17 @@ class Model():
             self.raw_data = f.read()
 
         self._clean_pairs()
+        self.split_data()
+
+        try:
+            pickle.dump(self.clean_data, open(self.clean_data_file , 'wb+'))
+            print('Saving all sentences {} to file: {}'.format(str(len(self.clean_data)), self.clean_data_file))
+            pickle.dump(self.train, open(self.train_file, 'wb+'))
+            print('Saving {} train sentences to file: {}'.format(str(len(self.train)), self.train_file))
+            pickle.dump(self.test, open(self.test_file , 'wb+'))
+            print('Saving {} test sentences to file: {}'.format(str(len(self.test)), self.test_file))
+        except Exception as e:
+            print(e)
         return
 
     def clean_line(self, line):
@@ -136,10 +150,6 @@ class Model():
                 clean_pair.append(self.clean_line(line))
             cleaned.append(clean_pair)
         self.clean_data = np.array(cleaned)
-        pickle.dump(self.clean_data, open(self.clean_data_file, 'wb+'))
-        print('Saving all sentences {} to file: {}'.format(str(len(self.clean_data)), self.clean_data_file))
-
-        self.split_data()
 
         return None
 
@@ -157,13 +167,7 @@ class Model():
         self.train = self.dataset[:slice_value]
         self.test = self.dataset[slice_value:]
 
-        try:
-            pickle.dump(self.train, open(self.train_file, 'wb+'))
-            print('Saving {} train sentences to file: {}'.format(str(len(self.train)), self.train_file))
-            pickle.dump(self.test, open(self.test_file, 'wb+'))
-            print('Saving {} test sentences to file: {}'.format(str(len(self.test)), self.test_file))
-        except Exception as e:
-            print(e)
+        return None
 
     def encode(self):
         # Be careful here!  Be sure to pick the correct tuple index for the language you want
@@ -184,7 +188,7 @@ class Model():
         print('Target Vocabulary Size: {}'.format(str(self.target_word_count)))
         print('Target Max Sentence Length: {}'.format(str(self.target_max_length)))
 
-        model_prefs = {'model_path': 'models/model.h5',
+        model_prefs = {'model_path': self.source_path + 'model.h5',
                         'source_tokenizer':self.source_tokenizer,
                         'source_max_length':self.source_max_length,
                         'source_word_count': self.source_word_count,
@@ -193,74 +197,47 @@ class Model():
                         'target_max_length':self.target_max_length
                         }
         try:
-            pickle.dump(model_prefs, open('pickles/model_prefs.pkl', 'wb+'))
+            pickle.dump(model_prefs, open(self.cache_path + 'pickles/model_prefs.pkl', 'wb+'))
         except Exception as e:
             print(e)
 
-    def encode_source(self, lines):
-        # integer encode sequences
-        y = self.source_tokenizer.texts_to_sequences(lines)
-        # pad sequences with 0 values
-        y = pad_sequences(y, self.source_max_length, padding='post')
-        y_list = list()
-        for sequence in y:
-            encoded = to_categorical(sequence, num_classes=self.source_word_count)
-            y_list.append(encoded)
-        y = np.array(y_list)
-        y = y.reshape(y.shape[0], y.shape[1], self.source_word_count)
-        print(y)
 
-    def translate(self, input):
-
-        output = input + ' blah, blah, blah'
-        return output
 
 
 
 class Translator():
-    def __init__(self):
-        try:
-            model_prefs = pickle.load(open('pickles/model_prefs.pkl', 'rb'))
-            self.model = load_model(model_prefs['model_path'])
-            self.source_tokenizer = model_prefs['source_tokenizer']
-            self.source_max_length = 'source_max_length'
-            self.source_word_count = 'source_word_count'
-        except Exception as e:
-            print(e)
+    def __init__(self, souce_file, source_lang, target_lang):
+        self.input_lines = ''
+        self.Model = Model(source_lang, target_lang)
+        self.Model.get_data(souce_file)
 
-    def translate(self, input):
-        source = np.array(input)
-        X = self.source_tokenizer.texts_to_sequences(source)
-        # pad sequences with 0 values
-        X = pad_sequences(X, maxlen=self.source_max_length, padding='post')
+    def word_for_id(self, integer, tokenizer):
+    	for word, index in tokenizer.word_index.items():
+    		if index == integer:
+    			return word
+    	return None
+    def translate(self, Input_Text, show_BLEU=True):
 
-        source = source.reshape((1, source))
-        return source + ' Translated'
+        predicted = Input_Text.upper()
+        actual = Input_Text
 
-    # def translate(self, actual, show_bleu=True):
-    #     predicted = self.Model._encode(actual)
-    #     print('src = {}\npredicted = {}'.format(actual, predicted))
-    #     if show_bleu:
-    #         print('BLEU-1: {}'.format(str(corpus_bleu(actual, predicted, weights=(1.0, 0, 0, 0)))))
-    #         print('BLEU-2: {}'.format(str(corpus_bleu(actual, predicted, weights=(0.5, 0.5, 0, 0)))))
-    #         print('BLEU-3: {}'.format(str(corpus_bleu(actual, predicted, weights=(0.3, 0.3, 0.3, 0)))))
-    #         print('BLEU-4: {}'.format(str(corpus_bleu(actual, predicted, weights=(0.25, 0.25, 0.25, 0.25)))))
-    #     return None
+        bleu_scores = []
+        bleu_scores.append('BLEU-1: {}\n'.format(str(corpus_bleu(actual, predicted, weights=(1.0, 0, 0, 0)))))
+        bleu_scores.append('BLEU-2: {}\n'.format(str(corpus_bleu(actual, predicted, weights=(0.5, 0.5, 0, 0)))))
+        bleu_scores.append('BLEU-3: {}\n'.format(str(corpus_bleu(actual, predicted, weights=(0.3, 0.3, 0.3, 0)))))
+        bleu_scores.append('BLEU-4: {}\n'.format(str(corpus_bleu(actual, predicted, weights=(0.25, 0.25, 0.25, 0.25)))))
+        translation = {'input_text':actual, 'translation':predicted}
+        print(translation)
+        print(bleu_scores)
+        if show_BLEU:
+            return (translation, bleu_scores)
+        else:
+            return (translation, '')
 
 if __name__ == '__main__':
-   German = Translator()
-   German.translate('guten morgen')
+    s3_file = 'LanguageTexts/deu.txt'
+    German = Translator(s3_file, 'de', 'en')
+    German.translate('guten morgen')
 # s3_file = 'LanguageTexts/deu.txt'
 # d2e_Data = Model('de', 'en')
 # d2e_Data.get_data(s3_file)
-# d2e_Data.encode_source('Guten Tag')
-# d2e_Data.clean_pairs()
-
-# line = 'Ich bin ein bischen unmüglich'
-# print(d2e_Data.clean_line(line))
-# d2e_Model = Model()
-# d2e = Translator(d2e_Model)
-#
-#
-# input_sentence = 'Hello, world! My name is David Haase. What is your name?'
-# d2e.translate(input_sentence, show_bleu=False)
