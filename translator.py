@@ -1,49 +1,54 @@
 import os
+import string
 import pickle
 import re
 
 import numpy as np
 
+from unicodedata import normalize
+
 from nltk.translate.bleu_score import corpus_bleu
 
-from utils import S3Bucket, clean_line
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
+from keras.utils import to_categorical
 
-table = str.maketrans('', '', string.punctuation)
-re_print = re.compile('[^%s]' % re.escape(string.printable))
+from utils import S3Bucket
 
-def clean_line(line):
-    # normalize unicode characters
-    line = normalize('NFD', line).encode('ascii', 'ignore')
-    line = line.decode('UTF-8')
-    # tokenize on white space
-    line = line.split()
-    # convert to lowercase
-    line = [word.lower() for word in line]
-    # remove punctuation from each token
-    line = [word.translate(table    ) for word in line]
-    # remove non-printable chars form each token
-    line = [re_print.sub('', w) for w in line]
-    # remove tokens with numbers in them
-    line = [word for word in line if word.isalpha()]
-    # store as string
-    return ' '.join(line)
-
-class Data():
+class Model():
     def __init__(self, source_lang, target_lang):
         self.source_path = ''
         self.prefix = source_lang + '2' + target_lang
         self.source_lang= source_lang
+        self.source_tokenizer = None
+        self.source_word_count = 0
+        self.source_max_length = 0
         self.target_lang = target_lang
+        self.target_tokenizer = None
+        self.target_word_count = 0
+        self.target_max_length = 0
         self.raw_data = []
+        self.dataset = []
         self.clean_data = []
         self.clean_data_file = 'pickles/' + self.prefix + '_sentence_pairs.pkl'
         self.train = []
         self.train_file = 'pickles/' + self.prefix + '_train.pkl'
         self.test = []
         self.test_file = 'pickles/' + self.prefix + '_test.pkl'
+        self.train_X = None
+        self.train_y = None
+        self.test_X = None
+        self.text_y = None
+        self.table = str.maketrans('', '', string.punctuation)
+        self.re_print = re.compile('[^%s]' % re.escape(string.printable))
 
 
-    def load_data(self, source_path, use_s3=True):
+    def get_data(self, source_path, s3=True):
+        self.load_data(source_path, s3)
+        self.split_data()
+        self.encode()
+
+    def load_data(self, source_path, s3=True):
 
         self.source_path = source_path
 
@@ -84,7 +89,7 @@ class Data():
 
         print('Rebuilding data from {}'.format(source_path))
 
-        if use_s3:
+        if s3:
             s3=S3Bucket()
             self.raw_data = s3.read(source_path)
         else:
@@ -94,6 +99,22 @@ class Data():
         self._clean_pairs()
         return
 
+    def clean_line(self, line):
+        # normalize unicode characters
+        line = normalize('NFD', line).encode('ascii', 'ignore')
+        line = line.decode('UTF-8')
+        # tokenize on white space
+        line = line.split()
+        # convert to lowercase
+        line = [word.lower() for word in line]
+        # remove punctuation from each token
+        line = [word.translate(self.table) for word in line]
+        # remove non-printable chars form each token
+        line = [self.re_print.sub('', w) for w in line]
+        # remove tokens with numbers in them
+        line = [word for word in line if word.isalpha()]
+        # store as string
+        return ' '.join(line)
 
     def _clean_pairs(self):
         # split into (source, target) language tuples
@@ -103,7 +124,7 @@ class Data():
         for pair in pairs:
             clean_pair = list()
             for line in pair:
-                clean_pair.append(clean_line(line))
+                clean_pair.append(self.clean_line(line))
             cleaned.append(clean_pair)
         self.clean_data = np.array(cleaned)
         pickle.dump(self.clean_data, open(self.clean_data_file, 'wb+'))
@@ -118,12 +139,14 @@ class Data():
         assert (split > 0 and split <= 100)
 
         slice_value = int((split/100)*subset)
-        dataset = self.clean_data[:subset, :]
+        self.dataset = self.clean_data[:subset, :]
+
         # random shuffle
-        np.random.shuffle(dataset)
+        np.random.shuffle(self.dataset)
+
         # split into train/test
-        self.train = dataset[:slice_value]
-        self.test = dataset[slice_value:]
+        self.train = self.dataset[:slice_value]
+        self.test = self.dataset[slice_value:]
 
         try:
             pickle.dump(self.train, open(self.train_file, 'wb+'))
@@ -133,18 +156,45 @@ class Data():
         except Exception as e:
             print(e)
 
-class Model():
-    def __init__(self):
-        self.model = None
-        self.source_tokenizer = None
-        self.target_tokenizer = None
+    def encode(self):
+        # Be careful here!  Be sure to pick the correct tuple index for the language you want
+        source_sentences = self.dataset[:, 1]
+        target_sentences = self.dataset[:, 0]
 
-    def _encode(self, sentence):
-        sequence = sentence.upper()
-        return sequence
+        self.source_tokenizer = Tokenizer()
+        self.source_tokenizer.fit_on_texts(source_sentences)
+        self.source_word_count = len(self.source_tokenizer.word_index) + 1
+        self.source_max_length = max(len(line.split()) for line in source_sentences)
+        print('Source Vocabulary Size: {}'.format(str(self.source_word_count)))
+        print('Source Max Sentence Length: {}'.format(str(self.source_max_length)))
 
-    def build_model(self, Data, force_rebuild=False):
-        pass
+        self.target_tokenizer = Tokenizer()
+        self.target_tokenizer.fit_on_texts(target_sentences)
+        self.target_word_count = len(self.target_tokenizer.word_index) + 1
+        self.target_max_length = max(len(line.split()) for line in target_sentences)
+        print('Target Vocabulary Size: {}'.format(str(self.target_word_count)))
+        print('Target Max Sentence Length: {}'.format(str(self.target_max_length)))
+
+        tokenizers = {'source':self.source_tokenizer, 'target':self.target_tokenizer}
+        try:
+            pickle.dump(tokenizers, open('pickles/tokenizers.pkl', 'wb+'))
+        except Exception as e:
+            print(e)
+
+    def encode_source(self, lines):
+        # integer encode sequences
+        y = self.source_tokenizer.texts_to_sequences(lines)
+        # pad sequences with 0 values
+        y = pad_sequences(y, self.source_max_length, padding='post')
+        y_list = list()
+        for sequence in y:
+            encoded = to_categorical(sequence, num_classes=self.source_word_count)
+            y_list.append(encoded)
+        y = np.array(y_list)
+        y = y.reshape(y.shape[0], y.shape[1], self.source_word_count)
+        print(y)
+
+
 
 class Translator():
     def __init__(self, Model):
@@ -162,8 +212,9 @@ class Translator():
 
 
 s3_file = 'LanguageTexts/deu.txt'
-d2e_Data = Data('de', 'en')
-d2e_Data.load_data(s3_file)
+d2e_Data = Model('de', 'en')
+d2e_Data.get_data(s3_file)
+d2e_Data.encode_source('Guten Tag')
 # d2e_Data.clean_pairs()
 
 # line = 'Ich bin ein bischen unmüglich'

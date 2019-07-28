@@ -1,6 +1,5 @@
 import os
 import pickle
-from unicodedata import normalize
 
 import boto3
 from credentials import aws_access_key_id, aws_secret_access_key

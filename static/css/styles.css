@@ -14,12 +14,12 @@
 }
 
 html {
-  font-family: "Lucinda Sans", sans-serif;
+/*   font-family: "Lucinda Sans", sans-serif; */
 }
 
 .header {
-  /*background-color: #9933cc;*/
-  background: url(./images/orchids.jpg);
+  background-color: #9933cc;
+  background: url(../images/orchids.jpg);
   background-size: cover;
   background-repeat: no-repeat;
   color: #ffffff;

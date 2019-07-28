@@ -2,43 +2,37 @@
 <html lang="en">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
-	<link rel="stylesheet" href="./css/styles.css">
+	<link rel="stylesheet" href="../static/css/styles.css">
 	<script src="./scripts/myScript.js"></script>
 	<body>
 		<div class="header">
-			<h1>dhh.<i>showProjects(<i>flatiron</i>)</h1>
+			<h1>BABEL</h1>
 		</div>
 
-		
+
 		<div class="row">
 			<div class="col-3 col-s-3 menu">
 				<h2 id="content-header">&nbsp;</h2>
 				<ul>
-			  		<li id="tictactoe" onclick="showGameBoard()">Project 1: Tic-Tac-Toe</li>
-			  		<li id="Corpus" onclick="showVisualization()">Project 2: The Corpus Counter</li>
-			  		<li>Project 3</li>
-			  		<li>Project 4</li>
+			  		<li id="German" onclick="showGameBoard()">Deutsch</li>
+			  		<li id="French" onclick="showVisualization()">Français</li>
+			  		<li>Italiano</li>
+			  		<li>Español</li>
 				</ul>
 		  	</div>
 
 			<div class="col-6 col-s-9">
-				<div id="Project1">
-					<div class="grid-container">					
-						<div>1</div>
-						<div>2</div>
-						<div>3</div>  
-						<div>4</div>
-						<div>5</div>
-						<div>6</div> 
-						<div>7</div> 
-						<div>8</div> 
-						<div>9</div>  
-					</div>
-				</div>				
+				<div id="Input_Area">
+					<form action = "http://localhost:5000/result" method = "POST">
+					 <p>Enter text: <input type = "text" name = "Input_Text" /></p>
+					 <p><input type = "submit" value = "submit" /></p>
+				  </form>
+				</div>
 				<div id="Project2">
+					<p>{{translation}}</p>
 <!-- 					<img id="v-win" class="window"></img> -->
 <!-- 					<iframe src="http://127.0.0.1:8050/" width="100%;" style="border:none;"></iframe> -->
-					<object class="window" type="text/html" data="http://127.0.0.1:8050/" height="400px;" width="100%;" style="border:none; overflow:hidden;"></object>
+<!-- 					<object class="window" type="text/html" data="http://127.0.0.1:8050/" height="400px;" width="100%;" style="border:none; overflow:hidden;"></object> -->
 				</div>
 			</div>
 			<div class="col-3 col-s-12">
@@ -56,5 +50,5 @@
 		<div class="footer">
 			<p>dhh.com</p>
 		</div>
-	</body>	
+	</body>
 </html>
