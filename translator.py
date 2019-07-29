@@ -267,7 +267,7 @@ class Model():
 
         # summarize defined model
         print(model.summary())
-        plot_model(model, to_file='model.png', show_shapes=True)
+        plot_model(model, to_file=self.cache_path + 'model.png', show_shapes=True)
         #
         # # fit model
         filename = self.cache_path + 'model.h5'
