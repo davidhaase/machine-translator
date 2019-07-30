@@ -1,3 +1,4 @@
+import sys
 import os
 import re
 import string
@@ -28,10 +29,6 @@ from utils import S3Bucket
 
 s3 = S3Bucket()
 
-french = {'name':'Français', 's3_file':'LanguageTexts/fra.txt', 'prefix': 'fr_to_en', 'path':'models/fr_to_en/'}
-german = {'name':'Deutsch', 's3_file':'LanguageTexts/deu.txt', 'prefix': 'de_to_en', 'path':'models/de_to_en/'}
-italian = {'name':'Italiano', 's3_file':'LanguageTexts/ita.txt', 'prefix': 'it_to_en','path':'models/it_to_en/'}
-spanish = {'name':'Español', 's3_file':'LanguageTexts/esp.txt', 'prefix': 'es_to_en','path':'models/es_to_en/'}
 
 def clean_line(line):
     table = str.maketrans('', '', string.punctuation)
@@ -59,6 +56,8 @@ def encode_lines(tokenizer, max_length, lines):
     # pad sequences with 0 values
     lines = pad_sequences(lines, maxlen=max_length, padding='post')
     return lines
+
+
 
 
 class Model():
@@ -116,14 +115,13 @@ class Model():
         self.text_y = None
 
 
-    def get_data(self, source_file='', subset=True, s3=True):
+    def get_data(self, subset, source_file='', s3=True):
         if (source_file != ''):
             self.source_file = source_file
-        self.subset = subset
-        self.load_data(s3)
+        self.load_data(subset=subset, s3=s3)
         self.encode()
 
-    def load_data(self, s3=True):
+    def load_data(self, subset, s3):
 
         # The data source being requested is the same that might already exist
         # So run through the following series of checks to see if data already exists locally
@@ -175,7 +173,7 @@ class Model():
             self.raw_data = f.read()
         self.clean_pairs()
 
-        self.split_data()
+        self.split_data(subset=subset)
         try:
             pickle.dump(self.clean_data, open(self.clean_data_file , 'wb+'))
             print('Saving all sentences {} to file: {}'.format(str(len(self.clean_data)), self.clean_data_file))
@@ -205,9 +203,8 @@ class Model():
 
         return None
 
-    def split_data(self, split=90):
-        subset = 10000 if self.subset else len(self.clean_data)
-        assert ((len(self.clean_data) > 0) and (len(self.clean_data) >= subset))
+    def split_data(self, subset, split=90):
+        assert ((len(self.clean_data) > 0) and (subset <= len(self.clean_data)))
         assert (split > 0 and split <= 100)
 
         slice_value = int((split/100)*subset)
@@ -294,14 +291,43 @@ class Model():
         print(model.summary())
         plot_model(model, to_file=self.image_path + 'model.png', show_shapes=True)
 
-        # # fit model
         checkpoint = ModelCheckpoint(self.model_path, monitor='val_loss', verbose=1, save_best_only=True, mode='min')
-        history = model.fit(self.train_X, self.train_y, epochs=epochs, batch_size=64, validation_data=(self.test_X, self.test_y), callbacks=[checkpoint], verbose=2)
+
+        acc = []
+        val_acc = []
+        loss = []
+        val_loss = []
+
+        total = len(self.train_X)
+        start = 0
+        interval = 1000
+        end = start + interval
+        while end < total:
+            start = end
+            end += interval
+
+            train_X = self.train_X[start:end]
+            train_y = self.train_y[start:end]
+            test_X = self.test_X[start:end]
+            test_y = self.test_y[start:end]
+            history = model.fit(train_X, train_y, epochs=epochs, batch_size=64, validation_data=(test_X, test_y), callbacks=[checkpoint], verbose=2)
+            acc += list(history.history['acc'])
+            val_acc += list(history.history['val_acc'])
+            loss += list(history.history['loss'])
+            val_loss += list(history.history['val_loss'])
+
+        train_X = self.train_X[start:total]
+        train_y = self.train_y[start:total]
+        test_X = self.test_X[start:total]
+        test_y = self.test_y[start:total]
+        history = model.fit(train_X, train_y, epochs=epochs, batch_size=64, validation_data=(test_X, test_y), callbacks=[checkpoint], verbose=2)
+        acc += list(history.history['acc'])
+        val_acc += list(history.history['val_acc'])
+        loss += list(history.history['loss'])
+        val_loss += list(history.history['val_loss'])
         self.model = model
 
         plt.figure(figsize=(18, 10))
-        acc = list(history.history['acc'])
-        val_acc = list(history.history['val_acc'])
         plt.plot(acc)
         plt.plot(val_acc)
         plt.title('model_accuracy')
@@ -312,8 +338,6 @@ class Model():
         # plt.show()
 
         plt.figure(figsize=(18, 10))
-        loss = list(history.history['loss'])
-        val_loss = list(history.history['val_loss'])
         plt.plot(loss)
         plt.plot(val_loss)
         plt.title('model_loss')
@@ -322,6 +346,24 @@ class Model():
         plt.legend(['train', 'test'], loc='best')
         plt.savefig(self.image_path + 'loss.png')
         # plt.show()
+
+        # actual, predicted = list(), list()
+        # for i, source in enumerate(self.train_X):
+        #     # translate encoded source text
+        #     source = source.reshape((1, source.shape[0]))
+        #     translation = predict_sequence(self.model, self.target_tokenizer, source)
+        #     raw_target, raw_src = self.train[i]
+        #     if i < 10:
+        #         print('src={}, target={}, predicted={}'.format(raw_src, raw_target, translation))
+        #     actual.append([raw_target.split()])
+        #     predicted.append(translation.split())
+        # # calculate BLEU score
+        # print('BLEU-1: {}'.format(corpus_bleu(actual, predicted, weights=(1.0, 0, 0, 0))))
+        # print('BLEU-2: {}'.format(corpus_bleu(actual, predicted, weights=(0.5, 0.5, 0, 0))))
+        # print('BLEU-3: {}'.format(corpus_bleu(actual, predicted, weights=(0.3, 0.3, 0.3, 0))))
+        # print('BLEU-4: {}'.format(corpus_bleu(actual, predicted, weights=(0.25, 0.25, 0.25, 0.25))))
+
+
 
 
 class Translator():
@@ -341,8 +383,6 @@ class Translator():
 
         except Exception as e:
             print(e)
-
-
 
     def word_for_id(self, integer, tokenizer):
         for word, index in tokenizer.word_index.items():
@@ -368,11 +408,24 @@ class Translator():
 
 
 if __name__ == '__main__':
-    description = 'Simple, almost linear preprocessing with five epochs for testing'
-    German = Model(language=german, model_name='basic-5', description=description)
+    language = sys.argv[1]
+    model_name=sys.argv[2]
+    epochs=sys.argv[3] if len(sys.argv)>3 else 5
+    subset=int(sys.argv[4]) if len(sys.argv)>4 else 10000
+    force_rebuild=sys.argv[5] if len(sys.argv)>5 else False
 
-    German.get_data()
-    German.build_model()
+    languages = {'French' :{'name':'Français', 's3_file':'LanguageTexts/fra.txt', 'prefix': 'fr_to_en', 'path':'models/fr_to_en/'},
+                'German' : {'name':'Deutsch', 's3_file':'LanguageTexts/deu.txt', 'prefix': 'de_to_en', 'path':'models/de_to_en/'},
+                'Italian' : {'name':'Italiano', 's3_file':'LanguageTexts/ita.txt', 'prefix': 'it_to_en','path':'models/it_to_en/'},
+                'Spanish' : {'name':'Español', 's3_file':'LanguageTexts/esp.txt', 'prefix': 'es_to_en','path':'models/es_to_en/'}}
+
+    print(languages[language])
+
+    description = 'Simple, almost linear preprocessing with five epochs for testing'
+    German = Model(language=languages[language], model_name=model_name, description=description, force_rebuild=force_rebuild)
+
+    German.get_data(subset=subset)
+    German.build_model(epochs=int(epochs))
 
     # model_pref_path = lang_sources[lang]['model_pref_path']
     # print(model_pref_path)

@@ -5,7 +5,7 @@ from keras.backend import clear_session
 
 
 app = Flask(__name__)
-model_id = 'five/'
+model_id = 'basic_30K/'
 lang_prefix = {'Français':'fr_to_en/',
                 'Deutsch':'de_to_en/',
                 'Italiano':'it_to_en/',
