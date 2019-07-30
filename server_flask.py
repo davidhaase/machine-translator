@@ -3,13 +3,13 @@ from flask import Flask, render_template, request
 from translator import Translator
 from keras.backend import clear_session
 
-lang_sources = {'Français':'models/fr_to_en/pickles/model_prefs.pkl',
-                'Deutsch': 'models/de_to_en/pickles/model_prefs.pkl',
-                'Italiano': 'models/it_to_en/pickles/model_prefs.pkl',
-                'Español': 'models/es_to_en/pickles/model_prefs.pkl'}
-
 
 app = Flask(__name__)
+model_id = 'five/'
+lang_prefix = {'Français':'fr_to_en/',
+                'Deutsch':'de_to_en/',
+                'Italiano':'it_to_en/',
+                'Español':'es_to_en/'}
 
 @app.route('/')
 def home_screen():
@@ -32,7 +32,7 @@ def result():
                 continue
 
         # Get the loaded model
-        model_pref_path = lang_sources[lang_index]
+        model_pref_path = 'models/' + lang_prefix[lang_index] + model_id + 'pickles/model_prefs.pkl'
         if not os.path.isfile(model_pref_path):
             input == 'Error: ' + input
             translation = 'No Model found for {}'.format(lang_index)

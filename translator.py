@@ -87,7 +87,7 @@ class Model():
         self.model_prefs = {'description':description}
         self.prefix = language['prefix']
         self.cache_path = cache_path
-        self.model_path = cache_path + 'model.h5',
+        self.model_path = cache_path + 'model.h5'
         self.source_file = language['s3_file']
         self.pickle_path = pickle_path
         self.image_path = image_path
@@ -185,10 +185,6 @@ class Model():
             print('Saving {} test sentences to file: {}'.format(str(len(self.test)), self.test_file))
             pickle.dump(self.dataset, open(self.dataset_file , 'wb+'))
             print('Saving {} dataset sentences to file: {}'.format(str(len(self.dataset)), self.dataset_file))
-
-            self.description_text['train_count'] = str(len(self.train))
-            self.description_text['test_count'] = str(len(self.test))
-            pickle.dump(self.description_text, open(self.pickle_path + 'description.pkl', 'w+'))
 
         except Exception as e:
             print(e)
@@ -299,8 +295,7 @@ class Model():
         plot_model(model, to_file=self.image_path + 'model.png', show_shapes=True)
 
         # # fit model
-        filename = self.cache_path + 'model.h5'
-        checkpoint = ModelCheckpoint(filename, monitor='val_loss', verbose=1, save_best_only=True, mode='min')
+        checkpoint = ModelCheckpoint(self.model_path, monitor='val_loss', verbose=1, save_best_only=True, mode='min')
         history = model.fit(self.train_X, self.train_y, epochs=epochs, batch_size=64, validation_data=(self.test_X, self.test_y), callbacks=[checkpoint], verbose=2)
         self.model = model
 
@@ -340,7 +335,8 @@ class Translator():
             #                   'target_tokenizer': keras_obj,
             #                   'target_word_count': int,
             #                   'target_max_length': int }
-            self.model = load_model('models/de_to_en/model.h5')
+            print(self.preferences['model_path'])
+            self.model = load_model(self.preferences['model_path'])
             self.input_text = None
 
         except Exception as e:
@@ -372,16 +368,16 @@ class Translator():
 
 
 if __name__ == '__main__':
-    description = 'Simple, almost linear preprocessing with five epochs for testing'
-    German = Model(language=german, model_name='five', description=description)
+    # description = 'Simple, almost linear preprocessing with five epochs for testing'
+    # German = Model(language=german, model_name='five', description=description)
+    #
+    # German.get_data()
+    # German.build_model()
 
-    German.get_data()
-    German.build_model()
-
-    # lang = 'Deutsch'
     # model_pref_path = lang_sources[lang]['model_pref_path']
     # print(model_pref_path)
-    # T = Translator(model_pref_path)
-    #
-    # de_string = 'Ich will nach Hause zuruk gehen'
-    # print(T.translate(de_string))
+    model_pref_path = 'models/de_to_en/five/pickles/model_prefs.pkl'
+    T = Translator(model_pref_path)
+
+    de_string = 'Ich will nach Hause gehen'
+    print(T.translate(de_string))
