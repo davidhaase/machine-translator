@@ -368,16 +368,16 @@ class Translator():
 
 
 if __name__ == '__main__':
-    # description = 'Simple, almost linear preprocessing with five epochs for testing'
-    # German = Model(language=german, model_name='five', description=description)
-    #
-    # German.get_data()
-    # German.build_model()
+    description = 'Simple, almost linear preprocessing with five epochs for testing'
+    German = Model(language=german, model_name='basic-5', description=description)
+
+    German.get_data()
+    German.build_model()
 
     # model_pref_path = lang_sources[lang]['model_pref_path']
     # print(model_pref_path)
-    model_pref_path = 'models/de_to_en/five/pickles/model_prefs.pkl'
-    T = Translator(model_pref_path)
-
-    de_string = 'Ich will nach Hause gehen'
-    print(T.translate(de_string))
+    # model_pref_path = 'models/de_to_en/five/pickles/model_prefs.pkl'
+    # T = Translator(model_pref_path)
+    #
+    # de_string = 'Ich will nach Hause gehen'
+    # print(T.translate(de_string))
