@@ -3,10 +3,10 @@ from flask import Flask, render_template, request
 from translator import Translator
 from keras.backend import clear_session
 
-lang_sources = {'Français': {'s3_file':'LanguageTexts/fra.txt', 'prefix': 'fr_to_en', 'path':'models/fr_to_en/', 'model_pref_path':'models/fr_to_en/pickles/model_prefs.pkl'},
-                'Deutsch': {'s3_file':'LanguageTexts/deu.txt', 'prefix': 'de_to_en', 'path':'models/de_to_en/', 'model_pref_path':'models/de_to_en/pickles/model_prefs.pkl'},
-                'Italiano': {'s3_file':'LanguageTexts/ita.txt', 'prefix': 'it_to_en','path':'models/it_to_en/', 'model_pref_path':'models/it_to_en/pickles/model_prefs.pkl'},
-                'Español': {'s3_file':'LanguageTexts/esp.txt', 'prefix': 'es_to_en','path':'models/es_to_en/', 'model_pref_path':'models/es_to_en/pickles/model_prefs.pkl'}}
+lang_sources = {'Français':'models/fr_to_en/pickles/model_prefs.pkl',
+                'Deutsch': 'models/de_to_en/pickles/model_prefs.pkl',
+                'Italiano': 'models/it_to_en/pickles/model_prefs.pkl',
+                'Español': 'models/es_to_en/pickles/model_prefs.pkl'}
 
 
 app = Flask(__name__)
@@ -32,7 +32,7 @@ def result():
                 continue
 
         # Get the loaded model
-        model_pref_path = lang_sources[lang_index]['model_pref_path']
+        model_pref_path = lang_sources[lang_index]
         if not os.path.isfile(model_pref_path):
             input == 'Error: ' + input
             translation = 'No Model found for {}'.format(lang_index)

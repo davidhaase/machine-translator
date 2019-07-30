@@ -6,6 +6,8 @@ import pickle
 from unicodedata import normalize
 
 import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 from nltk.translate.bleu_score import corpus_bleu
 
@@ -26,10 +28,10 @@ from utils import S3Bucket
 
 s3 = S3Bucket()
 
-lang_sources = {'Français': {'s3_file':'LanguageTexts/fra.txt', 'prefix': 'fr_to_en', 'path':'models/fr_to_en/', 'model_pref_path':'models/fr_to_en/pickles/model_prefs.pkl'},
-                'Deutsch': {'s3_file':'LanguageTexts/deu.txt', 'prefix': 'de_to_en', 'path':'models/de_to_en/', 'model_pref_path':'models/de_to_en/pickles/model_prefs.pkl'},
-                'Italiano': {'s3_file':'LanguageTexts/ita.txt', 'prefix': 'it_to_en','path':'models/it_to_en/', 'model_pref_path':'models/it_to_en/pickles/model_prefs.pkl'},
-                'Español': {'s3_file':'LanguageTexts/esp.txt', 'prefix': 'es_to_en','path':'models/es_to_en/', 'model_pref_path':'models/es_to_en/pickles/model_prefs.pkl'}}
+french = {'name':'Français', 's3_file':'LanguageTexts/fra.txt', 'prefix': 'fr_to_en', 'path':'models/fr_to_en/'}
+german = {'name':'Deutsch', 's3_file':'LanguageTexts/deu.txt', 'prefix': 'de_to_en', 'path':'models/de_to_en/'}
+italian = {'name':'Italiano', 's3_file':'LanguageTexts/ita.txt', 'prefix': 'it_to_en','path':'models/it_to_en/'}
+spanish = {'name':'Español', 's3_file':'LanguageTexts/esp.txt', 'prefix': 'es_to_en','path':'models/es_to_en/'}
 
 def clean_line(line):
     table = str.maketrans('', '', string.punctuation)
@@ -60,22 +62,37 @@ def encode_lines(tokenizer, max_length, lines):
 
 
 class Model():
-    def __init__(self, language):
+    def __init__(self, language, model_name, description, force_rebuild=False):
+
+        if model_name[-1] != '/':
+            model_name += '/'
+        cache_path = language['path'] + model_name
+        if (os.path.isdir(cache_path)) and (force_rebuild==False):
+            print('Model already exists at location {}'.format(cache_path))
+            print('To overwrite existing model, pass \'force_rebuild=True\'')
+            return None
+
         try:
-            pickle_path = lang_sources[language]['path'] + 'pickles/'
+            pickle_path = cache_path + 'pickles/'
             if not os.path.isdir(pickle_path):
                 os.makedirs(pickle_path)
+
+            image_path = cache_path + 'images/'
+            if not os.path.isdir(image_path):
+                os.makedirs(image_path)
         except Exception as e:
             print(e)
             return
 
-        self.prefix = lang_sources[language]['prefix']
-        self.cache_path = lang_sources[language]['path']
-        self.model_path = ''
-        self.source_file = lang_sources[language]['s3_file']
+        self.model_prefs = {'description':description}
+        self.prefix = language['prefix']
+        self.cache_path = cache_path
+        self.model_path = cache_path + 'model.h5',
+        self.source_file = language['s3_file']
         self.pickle_path = pickle_path
+        self.image_path = image_path
         self.model = None
-        self.source_lang= language
+        self.source_lang= language['name']
         self.source_tokenizer = Tokenizer()
         self.source_vocab_size = 0
         self.source_max_length = 0
@@ -84,6 +101,7 @@ class Model():
         self.target_vocab_size = 0
         self.target_max_length = 0
         self.raw_data = []
+        self.subset = 0
         self.dataset = []
         self.dataset_file = pickle_path + 'dataset.pkl'
         self.clean_data = []
@@ -98,9 +116,10 @@ class Model():
         self.text_y = None
 
 
-    def get_data(self, source_file='', s3=True):
+    def get_data(self, source_file='', subset=True, s3=True):
         if (source_file != ''):
             self.source_file = source_file
+        self.subset = subset
         self.load_data(s3)
         self.encode()
 
@@ -155,6 +174,7 @@ class Model():
             f = open(self.source_file, 'rb')
             self.raw_data = f.read()
         self.clean_pairs()
+
         self.split_data()
         try:
             pickle.dump(self.clean_data, open(self.clean_data_file , 'wb+'))
@@ -165,6 +185,11 @@ class Model():
             print('Saving {} test sentences to file: {}'.format(str(len(self.test)), self.test_file))
             pickle.dump(self.dataset, open(self.dataset_file , 'wb+'))
             print('Saving {} dataset sentences to file: {}'.format(str(len(self.dataset)), self.dataset_file))
+
+            self.description_text['train_count'] = str(len(self.train))
+            self.description_text['test_count'] = str(len(self.test))
+            pickle.dump(self.description_text, open(self.pickle_path + 'description.pkl', 'w+'))
+
         except Exception as e:
             print(e)
         return
@@ -184,8 +209,9 @@ class Model():
 
         return None
 
-    def split_data(self, subset=10000, split=90):
-        assert ((len(self.clean_data) > 0) and (len(self.clean_data) > subset))
+    def split_data(self, split=90):
+        subset = 10000 if self.subset else len(self.clean_data)
+        assert ((len(self.clean_data) > 0) and (len(self.clean_data) >= subset))
         assert (split > 0 and split <= 100)
 
         slice_value = int((split/100)*subset)
@@ -238,16 +264,19 @@ class Model():
         self.test_y = encode_lines(self.target_tokenizer, self.target_max_length, self.train[:, 0])
         self.test_y = self.encode_output(self.test_y, self.target_vocab_size)
 
-        model_prefs = {'model_path': self.model_path + 'model.h5',
+        self.model_prefs = {'model_path': self.model_path,
                         'source_tokenizer':self.source_tokenizer,
                         'source_max_length':self.source_max_length,
                         'source_vocab_size': self.source_vocab_size,
                         'target_tokenizer':self.target_tokenizer,
                         'target_vocab_size':self.target_vocab_size ,
-                        'target_max_length':self.target_max_length
+                        'target_max_length':self.target_max_length,
+                        'total_count': len(self.clean_data),
+                        'train_count': len(self.train),
+                        'test_count': len(self.test)
                         }
         try:
-            pickle.dump(model_prefs, open(self.pickle_path + 'model_prefs.pkl', 'wb+'))
+            pickle.dump(self.model_prefs, open(self.pickle_path + 'model_prefs.pkl', 'wb+'))
         except Exception as e:
             print(e)
 
@@ -260,20 +289,44 @@ class Model():
         model.add(TimeDistributed(Dense(tar_vocab, activation='softmax')))
         return model
 
-    def build_model(self):
+    def build_model(self, epochs=5):
         # define model
         model = self.define_model(self.source_vocab_size, self.target_vocab_size, self.source_max_length, self.target_max_length, 256)
-        model.compile(optimizer='adam', loss='categorical_crossentropy')
+        model.compile(optimizer='adam', metrics=['accuracy'], loss='categorical_crossentropy')
 
         # summarize defined model
         print(model.summary())
-        plot_model(model, to_file=self.cache_path + 'model.png', show_shapes=True)
-        #
+        plot_model(model, to_file=self.image_path + 'model.png', show_shapes=True)
+
         # # fit model
         filename = self.cache_path + 'model.h5'
         checkpoint = ModelCheckpoint(filename, monitor='val_loss', verbose=1, save_best_only=True, mode='min')
-        model.fit(self.train_X, self.train_y, epochs=30, batch_size=64, validation_data=(self.test_X, self.test_y), callbacks=[checkpoint], verbose=2)
+        history = model.fit(self.train_X, self.train_y, epochs=epochs, batch_size=64, validation_data=(self.test_X, self.test_y), callbacks=[checkpoint], verbose=2)
         self.model = model
+
+        plt.figure(figsize=(18, 10))
+        acc = list(history.history['acc'])
+        val_acc = list(history.history['val_acc'])
+        plt.plot(acc)
+        plt.plot(val_acc)
+        plt.title('model_accuracy')
+        plt.ylabel('accuracy')
+        plt.xlabel('epoch')
+        plt.legend(['train', 'test'], loc='best')
+        plt.savefig(self.image_path + 'accuracy.png')
+        # plt.show()
+
+        plt.figure(figsize=(18, 10))
+        loss = list(history.history['loss'])
+        val_loss = list(history.history['val_loss'])
+        plt.plot(loss)
+        plt.plot(val_loss)
+        plt.title('model_loss')
+        plt.ylabel('loss')
+        plt.xlabel('epoch')
+        plt.legend(['train', 'test'], loc='best')
+        plt.savefig(self.image_path + 'loss.png')
+        # plt.show()
 
 
 class Translator():
@@ -319,14 +372,16 @@ class Translator():
 
 
 if __name__ == '__main__':
-    # German = Model('Deutsch')
-    # German.get_data()
-    # German.build_model()
+    description = 'Simple, almost linear preprocessing with five epochs for testing'
+    German = Model(language=german, model_name='five', description=description)
 
-    lang = 'Deutsch'
-    model_pref_path = lang_sources[lang]['model_pref_path']
-    print(model_pref_path)
-    T = Translator(model_pref_path)
+    German.get_data()
+    German.build_model()
 
-    de_string = 'Ich will nach Hause zuruk gehen'
-    print(T.translate(de_string))
+    # lang = 'Deutsch'
+    # model_pref_path = lang_sources[lang]['model_pref_path']
+    # print(model_pref_path)
+    # T = Translator(model_pref_path)
+    #
+    # de_string = 'Ich will nach Hause zuruk gehen'
+    # print(T.translate(de_string))
