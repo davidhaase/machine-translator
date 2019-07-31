@@ -258,6 +258,8 @@ class Model():
         self.test_y = encode_lines(self.target_tokenizer, self.target_max_length, self.test[:, 0])
         self.test_y = self.encode_output(self.test_y, self.target_vocab_size)
 
+        print(str(len(self.test_X)), str(len(self.test_y)))
+
         # self.model_prefs = {'model_path': self.model_path,
         #                 'source_tokenizer':self.source_tokenizer,
         #                 'source_max_length':self.source_max_length,
@@ -300,27 +302,35 @@ class Model():
         val_loss = []
 
         total = len(self.train_X)
+
         start = 0
         interval = 10000
         end = start + interval
         steps = total/interval
+
+        test_start = 0
+        test_interval = 1000
+        test_end = test_start + test_interval
         step = 0
         while end < total:
-            start = end
-            end += interval
             step += 1
             print('Step {} of {}'.format(str(step), str(steps)))
 
             train_X = self.train_X[start:end]
             train_y = self.train_y[start:end]
-            test_X = self.test_X[start:end]
-            test_y = self.test_y[start:end]
+            test_X = self.test_X[test_start:test_end]
+            test_y = self.test_y[test_start:test_end]
             history = model.fit(train_X, train_y, epochs=epochs, batch_size=64, validation_data=(test_X, test_y), callbacks=[checkpoint], verbose=2)
             acc += list(history.history['acc'])
             val_acc += list(history.history['val_acc'])
             loss += list(history.history['loss'])
             val_loss += list(history.history['val_loss'])
             self.save_figure(acc, val_acc, loss, val_loss)
+
+            start = end
+            end += interval
+            test_start = test_end
+            test_end += test_interval
 
         train_X = self.train_X[start:total]
         train_y = self.train_y[start:total]
