@@ -474,26 +474,15 @@ if __name__ == '__main__':
                 'Turkish' : {'name':'Türk', 's3_file':'LanguageTexts/tur.txt', 'prefix': 'tr_to_en','path':'models/tr_to_en/'}}
 
 
-    subset = 500
-    description = 'dev test with 500'
-    model_name = 'dev_test_500'
+    subset = 50000
+    description = 'Basic word clean-up; 50,000 sentences, 35 epochs of 10,000 batches'
+    model_name = 'basic_50K_35E'
     epochs = 35
 
-    model = Model(language=languages['German'], model_name=model_name, description=description, force_rebuild=True)
-    model.get_data(subset=subset)
-    model.build_model(epochs=int(epochs))
 
-    # for lang in languages:
-    #     print('Processing {}'.format(lang))
-    #     model = Model(language=languages[lang], model_name=model_name, description=description, force_rebuild=True)
-    #     model.get_data(subset=subset)
-    #     model.build_model(epochs=int(epochs))
-    #     clear_session()
-
-    # model_pref_path = lang_sources[lang]['model_pref_path']
-    # print(model_pref_path)
-    # model_pref_path = 'models/de_to_en/five/pickles/model_prefs.pkl'
-    # T = Translator(model_pref_path)
-    #
-    # de_string = 'Ich will nach Hause gehen'
-    # print(T.translate(de_string))
+    for lang in languages:
+        print('Processing {}'.format(lang))
+        model = Model(language=languages[lang], model_name=model_name, description=description, force_rebuild=True)
+        model.get_data(subset=subset)
+        model.build_model(epochs=int(epochs))
+        clear_session()
