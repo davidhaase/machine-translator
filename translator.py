@@ -466,13 +466,13 @@ if __name__ == '__main__':
     # subset=int(sys.argv[4]) if len(sys.argv)>4 else 10000
     # force_rebuild=sys.argv[5] if len(sys.argv)>5 else False
 
-    languages = {'French' :{'name':'Français', 's3_file':'LanguageTexts/fra.txt', 'prefix': 'fr_to_en', 'path':'models/fr_to_en/'},
-                'German' : {'name':'Deutsch', 's3_file':'LanguageTexts/deu.txt', 'prefix': 'de_to_en', 'path':'models/de_to_en/'},
-                'Italian' : {'name':'Italiano', 's3_file':'LanguageTexts/ita.txt', 'prefix': 'it_to_en','path':'models/it_to_en/'},
-                'Spanish' : {'name':'Español', 's3_file':'LanguageTexts/esp.txt', 'prefix': 'es_to_en','path':'models/es_to_en/'},
-                'Danish' : {'name':'Español', 's3_file':'LanguageTexts/dan.txt', 'prefix': 'dk_to_en','path':'models/dk_to_en/'},
-                'Turkish' : {'name':'Türk', 's3_file':'LanguageTexts/tur.txt', 'prefix': 'tr_to_en','path':'models/tr_to_en/'}}
-
+    # languages = {'French' :{'name':'Français', 's3_file':'LanguageTexts/fra.txt', 'prefix': 'fr_to_en', 'path':'models/fr_to_en/'},
+    #             'German' : {'name':'Deutsch', 's3_file':'LanguageTexts/deu.txt', 'prefix': 'de_to_en', 'path':'models/de_to_en/'},
+    #             'Italian' : {'name':'Italiano', 's3_file':'LanguageTexts/ita.txt', 'prefix': 'it_to_en','path':'models/it_to_en/'},
+    #             'Spanish' : {'name':'Español', 's3_file':'LanguageTexts/esp.txt', 'prefix': 'es_to_en','path':'models/es_to_en/'},
+    #             'Danish' : {'name':'Español', 's3_file':'LanguageTexts/dan.txt', 'prefix': 'dk_to_en','path':'models/dk_to_en/'},
+    #             'Turkish' : {'name':'Türk', 's3_file':'LanguageTexts/tur.txt', 'prefix': 'tr_to_en','path':'models/tr_to_en/'}}
+    languages = {'Turkish' : {'name':'Türk', 's3_file':'LanguageTexts/tur.txt', 'prefix': 'tr_to_en','path':'models/tr_to_en/'}}
 
     subset = 50000
     description = 'Basic word clean-up; 50,000 sentences, 35 epochs of 10,000 batches'

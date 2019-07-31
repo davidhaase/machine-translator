@@ -20,19 +20,17 @@ from keras.backend import clear_session
 # 'BLEU4': 1.1489659452541084e-78}
 
 app = Flask(__name__)
-model_id = 'dev_test_500/'
+model_id = 'basic_50K_35E/'
 lang_prefix = {'French':'fr_to_en/',
                 'German':'de_to_en/',
                 'Italian':'it_to_en/',
                 'Spanish':'es_to_en/',
-                'Danish': 'dk_to_en/',
                 'Turkish': 'tr_to_en/'}
 
 lang_options = [ {"Label": "Deutsch", "Value": "German", "Selected": False},
             {"Label": "Français", "Value": "French", "Selected": True},
             {"Label": "Italiano", "Value": "Italian", "Selected": False},
             {"Label": "Türk", "Value": "Turkish", "Selected": False},
-            {"Label": "Dansk", "Value": "Danish", "Selected": False},
             {"Label": "Español", "Value": "Spanish", "Selected": False}]
 
 lang_index = 'French'
@@ -42,18 +40,12 @@ def get_selected(options):
         if option["Selected"]:
             return option["Value"]
 
-@app.route('/')
-def home_screen():
-    return render_template('index.html', translation='', options=lang_options, selected_lang=get_selected(lang_options))
-
-@app.route('/language', methods = ['POST', 'GET'])
-def selecte_language():
-    if request.method == 'POST':
-        lang_index = request.form['Language']
-
-    for option in options:
+def set_language(lang_index):
+    for option in lang_options:
         option["Selected"] = True if option["Value"] == lang_index else False
 
+@app.route('/')
+def home_screen():
     return render_template('index.html', translation='', options=lang_options, selected_lang=get_selected(lang_options))
 
 @app.route('/result',methods = ['POST', 'GET'])
@@ -61,34 +53,46 @@ def translate():
     if request.method == 'POST':
 
         # Get the results from the web user
-        input = request.form['Input_Text']
-        # for item in html_data.items():
-        #     key, value = item
-        #     print(key, value)
-        #     if key == 'Language':
-        #         lang_index = value
-        #         continue
-        #     if key == 'Input_Text':
-        #         input = value
-        #         continue
+        form_data = request.form
+        for key, value in form_data.items():
+            if key == 'Input_Text':
+                input = value
+                continue
+            if key == 'Language':
+                lang_index = value
 
-        # Try to get the loaded model
+        set_language(lang_index)
+
+        # Build the path to the correct model
         model_pref_path = 'models/' + lang_prefix[lang_index] + model_id + 'pickles/model_prefs.pkl'
+
+        # Confirm a model exists for that language
         if not os.path.isfile(model_pref_path):
             input = 'Error: ' + input
             translation_error = 'No Model found for {}'.format(lang_index)
-            return render_template('index.html', input_text=input, translation=translation_error, selected_lang=get_selected(lang_options), options=lang_options)
+            return render_template('index.html',
+                                    input_echo=input,
+                                    input_text=input,
+                                    translation=translation_error,
+                                    selected_lang=get_selected(lang_options),
+                                    options=lang_options)
 
         # A model exists, so use it and translate away!
-        # T = Translator(model_pref_path)
-        # translation = T.translate(input)
+        T = Translator(model_pref_path)
+        translation = T.translate(input)
         #
         # # Keras backend needs to clear the session
-        # clear_session()
+        clear_session()
+        return render_template('index.html',
+                                input_echo=input,
+                                input_text=input,
+                                translation=translation,
+                                selected_lang=get_selected(lang_options),
+                                options=lang_options)
 
-        for option in options:
-            option["Selected"] = True if option["Value"] == lang_index else False
-        return render_template('index.html', input_text=input, translation=lang_index, selected_lang=get_selected(options), options=options)
+        # for option in options:
+        #     option["Selected"] = True if option["Value"] == lang_index else False
+        # return render_template('index.html', input_text=input, translation=translation, selected_lang=get_selected(options), options=options)
 
 if __name__ == '__main__':
     app.run(debug=True)
