@@ -258,21 +258,21 @@ class Model():
         self.test_y = encode_lines(self.target_tokenizer, self.target_max_length, self.train[:, 0])
         self.test_y = self.encode_output(self.test_y, self.target_vocab_size)
 
-        self.model_prefs = {'model_path': self.model_path,
-                        'source_tokenizer':self.source_tokenizer,
-                        'source_max_length':self.source_max_length,
-                        'source_vocab_size': self.source_vocab_size,
-                        'target_tokenizer':self.target_tokenizer,
-                        'target_vocab_size':self.target_vocab_size ,
-                        'target_max_length':self.target_max_length,
-                        'total_count': len(self.clean_data),
-                        'train_count': len(self.train),
-                        'test_count': len(self.test)
-                        }
-        try:
-            pickle.dump(self.model_prefs, open(self.pickle_path + 'model_prefs.pkl', 'wb+'))
-        except Exception as e:
-            print(e)
+        # self.model_prefs = {'model_path': self.model_path,
+        #                 'source_tokenizer':self.source_tokenizer,
+        #                 'source_max_length':self.source_max_length,
+        #                 'source_vocab_size': self.source_vocab_size,
+        #                 'target_tokenizer':self.target_tokenizer,
+        #                 'target_vocab_size':self.target_vocab_size ,
+        #                 'target_max_length':self.target_max_length,
+        #                 'total_count': len(self.clean_data),
+        #                 'train_count': len(self.train),
+        #                 'test_count': len(self.test)
+        #                 }
+        # try:
+        #     pickle.dump(self.model_prefs, open(self.pickle_path + 'model_prefs.pkl', 'wb+'))
+        # except Exception as e:
+        #     print(e)
 
     def define_model(self, src_vocab, tar_vocab, src_timesteps, tar_timesteps, n_units):
         model = Sequential()
@@ -304,10 +304,11 @@ class Model():
         interval = 10000
         end = start + interval
         steps = total/interval
-        step = 1
+        step = 0
         while end < total:
             start = end
             end += interval
+            step += 1
             print('Step {} of {}'.format(str(step), str(steps)))
 
             train_X = self.train_X[start:end]
@@ -333,6 +334,27 @@ class Model():
         self.save_figure(acc, val_acc, loss, val_loss)
         self.model = model
 
+        blue1, blue2, blue3, blue4 = evaluate_model(model, self.target_tokenizer, self.train_X, self.train)
+
+        self.model_prefs = {'model_path': self.model_path,
+                        'source_tokenizer':self.source_tokenizer,
+                        'source_max_length':self.source_max_length,
+                        'source_vocab_size': self.source_vocab_size,
+                        'target_tokenizer':self.target_tokenizer,
+                        'target_vocab_size':self.target_vocab_size ,
+                        'target_max_length':self.target_max_length,
+                        'total_count': len(self.clean_data),
+                        'train_count': len(self.train),
+                        'test_count': len(self.test),
+                        'BLEU1':blue1,
+                        'BLEU2':blue2,
+                        'BLEU3':blue3,
+                        'BLEU4':blue4
+                        }
+        try:
+            pickle.dump(self.model_prefs, open(self.pickle_path + 'model_prefs.pkl', 'wb+'))
+        except Exception as e:
+            print(e)
     def save_figure(self, acc, val_acc, loss, val_loss):
         plt.figure(figsize=(18, 10))
         plt.plot(acc)
@@ -354,24 +376,47 @@ class Model():
         plt.savefig(self.image_path + 'loss.png')
         # plt.show()
 
-        # actual, predicted = list(), list()
-        # for i, source in enumerate(self.train_X):
-        #     # translate encoded source text
-        #     source = source.reshape((1, source.shape[0]))
-        #     translation = predict_sequence(self.model, self.target_tokenizer, source)
-        #     raw_target, raw_src = self.train[i]
-        #     if i < 10:
-        #         print('src={}, target={}, predicted={}'.format(raw_src, raw_target, translation))
-        #     actual.append([raw_target.split()])
-        #     predicted.append(translation.split())
-        # # calculate BLEU score
-        # print('BLEU-1: {}'.format(corpus_bleu(actual, predicted, weights=(1.0, 0, 0, 0))))
-        # print('BLEU-2: {}'.format(corpus_bleu(actual, predicted, weights=(0.5, 0.5, 0, 0))))
-        # print('BLEU-3: {}'.format(corpus_bleu(actual, predicted, weights=(0.3, 0.3, 0.3, 0))))
-        # print('BLEU-4: {}'.format(corpus_bleu(actual, predicted, weights=(0.25, 0.25, 0.25, 0.25))))
+# map an integer to a word
+def word_for_id(integer, tokenizer):
+	for word, index in tokenizer.word_index.items():
+		if index == integer:
+			return word
+	return None
 
+# generate target given source sequence
+def predict_sequence(model, tokenizer, source):
+	prediction = model.predict(source, verbose=0)[0]
+	integers = [np.argmax(vector) for vector in prediction]
+	target = list()
+	for i in integers:
+		word = word_for_id(i, tokenizer)
+		if word is None:
+			break
+		target.append(word)
+	return ' '.join(target)
 
-
+# evaluate the skill of the model
+def evaluate_model(model, tokenizer, sources, raw_dataset):
+    actual, predicted = list(), list()
+    for i, source in enumerate(sources):
+        # translate encoded source text
+        source = source.reshape((1, source.shape[0]))
+        translation = predict_sequence(model, tokenizer, source)
+        raw_target, raw_src = raw_dataset[i]
+        if i < 10:
+            print('src={}, target={}, predicted={}'.format(raw_src, raw_target, translation))
+        actual.append([raw_target.split()])
+        predicted.append(translation.split())
+    # calculate BLEU score
+    blue1 = corpus_bleu(actual, predicted, weights=(1.0, 0, 0, 0))
+    blue2 = corpus_bleu(actual, predicted, weights=(0.5, 0.5, 0, 0))
+    blue3 = corpus_bleu(actual, predicted, weights=(0.3, 0.3, 0.3, 0))
+    blue4 = corpus_bleu(actual, predicted, weights=(0.25, 0.25, 0.25, 0.25))
+    print('BLEU-1: {}'.format(str(blue1)))
+    print('BLEU-2: {}'.format(str(blue2)))
+    print('BLEU-3: {}'.format(str(blue3)))
+    print('BLEU-4: {}'.format(str(blue4)))
+    return blue1, blue2, blue3, blue4
 
 class Translator():
     def __init__(self, model_pref_path):
@@ -429,17 +474,21 @@ if __name__ == '__main__':
                 'Turkish' : {'name':'Türk', 's3_file':'LanguageTexts/tur.txt', 'prefix': 'tr_to_en','path':'models/tr_to_en/'}}
 
 
-    subset = 50000
-    description = 'Basic test with 35 epochs'
-    model_name = 'basic_50K_35E'
+    subset = 500
+    description = 'dev test with 500'
+    model_name = 'dev_test_500'
     epochs = 35
 
-    for lang in languages:
-        print('Processing {}'.format(lang))
-        model = Model(language=languages[lang], model_name=model_name, description=description)
-        model.get_data(subset=subset)
-        model.build_model(epochs=int(epochs))
-        clear_session()
+    model = Model(language=languages['German'], model_name=model_name, description=description, force_rebuild=True)
+    model.get_data(subset=subset)
+    model.build_model(epochs=int(epochs))
+
+    # for lang in languages:
+    #     print('Processing {}'.format(lang))
+    #     model = Model(language=languages[lang], model_name=model_name, description=description, force_rebuild=True)
+    #     model.get_data(subset=subset)
+    #     model.build_model(epochs=int(epochs))
+    #     clear_session()
 
     # model_pref_path = lang_sources[lang]['model_pref_path']
     # print(model_pref_path)
