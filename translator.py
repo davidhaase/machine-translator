@@ -254,8 +254,8 @@ class Model():
         self.train_y = encode_lines(self.target_tokenizer, self.target_max_length, self.train[:, 0])
         self.train_y = self.encode_output(self.train_y, self.target_vocab_size)
         # # prepare validation data
-        self.test_X = encode_lines(self.source_tokenizer, self.source_max_length, self.train[:, 1])
-        self.test_y = encode_lines(self.target_tokenizer, self.target_max_length, self.train[:, 0])
+        self.test_X = encode_lines(self.source_tokenizer, self.source_max_length, self.test[:, 1])
+        self.test_y = encode_lines(self.target_tokenizer, self.target_max_length, self.test[:, 0])
         self.test_y = self.encode_output(self.test_y, self.target_vocab_size)
 
         # self.model_prefs = {'model_path': self.model_path,
@@ -472,11 +472,16 @@ if __name__ == '__main__':
     #             'Spanish' : {'name':'Español', 's3_file':'LanguageTexts/esp.txt', 'prefix': 'es_to_en','path':'models/es_to_en/'},
     #             'Danish' : {'name':'Español', 's3_file':'LanguageTexts/dan.txt', 'prefix': 'dk_to_en','path':'models/dk_to_en/'},
     #             'Turkish' : {'name':'Türk', 's3_file':'LanguageTexts/tur.txt', 'prefix': 'tr_to_en','path':'models/tr_to_en/'}}
-    languages = {'Turkish' : {'name':'Türk', 's3_file':'LanguageTexts/tur.txt', 'prefix': 'tr_to_en','path':'models/tr_to_en/'}}
+    languages = {'French' :{'name':'Français', 's3_file':'LanguageTexts/fra.txt', 'prefix': 'fr_to_en', 'path':'models/fr_to_en/'},
+                'German' : {'name':'Deutsch', 's3_file':'LanguageTexts/deu.txt', 'prefix': 'de_to_en', 'path':'models/de_to_en/'},
+                'Italian' : {'name':'Italiano', 's3_file':'LanguageTexts/ita.txt', 'prefix': 'it_to_en','path':'models/it_to_en/'},
+                'Spanish' : {'name':'Español', 's3_file':'LanguageTexts/esp.txt', 'prefix': 'es_to_en','path':'models/es_to_en/'},
+                'Danish' : {'name':'Español', 's3_file':'LanguageTexts/dan.txt', 'prefix': 'dk_to_en','path':'models/dk_to_en/'},
+                'Turkish' : {'name':'Türk', 's3_file':'LanguageTexts/tur.txt', 'prefix': 'tr_to_en','path':'models/tr_to_en/'}}
 
     subset = 50000
     description = 'Basic word clean-up; 50,000 sentences, 35 epochs of 10,000 batches'
-    model_name = 'basic_50K_35E'
+    model_name = 'basic_50K_35E_fixed'
     epochs = 35
 
 

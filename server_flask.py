@@ -1,7 +1,11 @@
 import os
+import pickle
 from flask import Flask, render_template, request
 from translator import Translator
 from keras.backend import clear_session
+
+from utils import S3Bucket
+
 
 # model_prefs.pkl
 # 'model_path': 'models/de_to_en/dev_test_500/model.h5',
@@ -19,6 +23,7 @@ from keras.backend import clear_session
 # 'BLEU3': 0.059549619334633,
 # 'BLEU4': 1.1489659452541084e-78}
 
+# Session scope variables
 app = Flask(__name__)
 model_id = 'basic_50K_35E/'
 lang_prefix = {'French':'fr_to_en/',
@@ -35,6 +40,8 @@ lang_options = [ {"Label": "Deutsch", "Value": "German", "Selected": False},
 
 lang_index = 'French'
 
+s3 = S3Bucket()
+
 def get_selected(options):
     for option in options:
         if option["Selected"]:
@@ -44,6 +51,7 @@ def set_language(lang_index):
     for option in lang_options:
         option["Selected"] = True if option["Value"] == lang_index else False
 
+# HTML methods
 @app.route('/')
 def home_screen():
     return render_template('index.html', translation='', options=lang_options, selected_lang=get_selected(lang_options))
@@ -63,22 +71,30 @@ def translate():
 
         set_language(lang_index)
 
-        # Build the path to the correct model
-        model_pref_path = 'models/' + lang_prefix[lang_index] + model_id + 'pickles/model_prefs.pkl'
+        # Get the model preferences locally or from S3
+        s3_file = False
 
-        # Confirm a model exists for that language
-        if not os.path.isfile(model_pref_path):
-            input = 'Error: ' + input
-            translation_error = 'No Model found for {}'.format(lang_index)
+        try:
+            if (s3_file):
+                model_pref_path = 'machine-learning/models/' + lang_prefix[lang_index] + model_id + 'pickles/model_prefs.pkl'
+                s3 = S3Bucket()
+                model_prefs = pickle.load(s3.read_pickle(model_pref_path))
+            else:
+                model_pref_path = 'models/' + lang_prefix[lang_index] + model_id + 'pickles/model_prefs.pkl'
+                model_prefs = pickle.load(open(model_pref_path, 'rb'))
+
+        except Exception as e:
+            input = e
+            translation_error = 'No Model found for {}'.format(model_pref_path)
             return render_template('index.html',
                                     input_echo=input,
-                                    input_text=input,
+                                    input_text='Unable to load language model: ' + lang_index,
                                     translation=translation_error,
                                     selected_lang=get_selected(lang_options),
                                     options=lang_options)
 
         # A model exists, so use it and translate away!
-        T = Translator(model_pref_path)
+        T = Translator(model_prefs)
         translation = T.translate(input)
         #
         # # Keras backend needs to clear the session
