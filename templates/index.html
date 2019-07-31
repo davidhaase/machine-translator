@@ -12,36 +12,40 @@
 
 		<div class="row">
 			<div class="col-3 col-s-3 menu">
-				<h2 id="content-header">&nbsp;</h2>
-				<ul>
-			  		<li id="German" onclick="showGameBoard()">Deutsch</li>
-			  		<li id="French" onclick="showVisualization()">Français</li>
-			  		<li>Italiano</li>
-			  		<li>Español</li>
-				</ul>
-		  	</div>
-
+<!-- 				<h2 id="content-header">&nbsp;</h2> -->
+				<form action="http://localhost:5000/set_language" method="POST">
+					<select class="list" name="language">
+					  <option value="Deutsch">Deutsch</option>
+					  <option value="Français">Français</option>
+					  <option value="Italiano">Italiano</option>
+					  <option value="Español">Español</option>
+						<option value="Dansk">Dansk</option>
+						<option value="Türk">Türk</option>
+					</select>
+					<!-- <ul>
+						<li><input class="list" type="submit" value="Deutsch"></input></li>
+						<li><input class="list" type="submit" value="Français"></input></li>
+						<li><input class="list" type="submit" value="Italiano"></input></li>
+						<li><input class="list" type="submit" value="Español"></input></li>
+						<li><input class="list" type="submit" value="Dansk"></input></li>
+						<li><input class="list" type="submit" value="Türk"></input></li>
+					</ul> -->
+				</form>
+			</div>
 			<div class="col-6 col-s-9">
 				<div id="Input_Area">
 					<form action="http://localhost:5000/result" method="POST">
-						<h3>
-							<input type="radio" name="Language" value="Deutsch">Deutsch</input>
-							<input type="radio" name="Language" value="Français">Français</input>
-							<input type="radio" name="Language" value="Italiano">Italiano</input>
-							<input type="radio" name="Language" value="Español">Español</input>
-						</h3>
-					 <p>Enter text: <input type = "text" name = "Input_Text" /></p>
+					 <p><i>Enter text in {{selected_lang}}:</i></p>
+					 <!-- <input type = "text" name = "Input_Text" /></p> -->
+					 <textarea name="Input_Text" cols="50" rows="4"></textarea>
 					 <p><input type = "submit" value = "submit" /></p>
 				  </form>
 				</div>
 				<div id="Project2">
-					<h3>Input Text</h3>
-					<p>{{input_text}}</p>
-					<h3>Translation</h3>
-					<p>{{translation}}</p>
-<!-- 					<img id="v-win" class="window"></img> -->
-<!-- 					<iframe src="http://127.0.0.1:8050/" width="100%;" style="border:none;"></iframe> -->
-<!-- 					<object class="window" type="text/html" data="http://127.0.0.1:8050/" height="400px;" width="100%;" style="border:none; overflow:hidden;"></object> -->
+					<h5>Input Text</h5>
+					<h3>{{input_text}}</h3>
+					<h5>Translation</h5>
+					<h3>{{translation}}</h3>
 				</div>
 			</div>
 			<div class="col-3 col-s-12">

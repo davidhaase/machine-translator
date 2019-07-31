@@ -24,6 +24,7 @@ from keras.layers import Embedding
 from keras.layers import RepeatVector
 from keras.layers import TimeDistributed
 from keras.callbacks import ModelCheckpoint
+from keras.backend import clear_session
 
 from utils import S3Bucket
 
@@ -300,11 +301,14 @@ class Model():
 
         total = len(self.train_X)
         start = 0
-        interval = 1000
+        interval = 10000
         end = start + interval
+        steps = total/interval
+        step = 1
         while end < total:
             start = end
             end += interval
+            print('Step {} of {}'.format(str(step), str(steps)))
 
             train_X = self.train_X[start:end]
             train_y = self.train_y[start:end]
@@ -315,6 +319,7 @@ class Model():
             val_acc += list(history.history['val_acc'])
             loss += list(history.history['loss'])
             val_loss += list(history.history['val_loss'])
+            self.save_figure(acc, val_acc, loss, val_loss)
 
         train_X = self.train_X[start:total]
         train_y = self.train_y[start:total]
@@ -325,8 +330,10 @@ class Model():
         val_acc += list(history.history['val_acc'])
         loss += list(history.history['loss'])
         val_loss += list(history.history['val_loss'])
+        self.save_figure(acc, val_acc, loss, val_loss)
         self.model = model
 
+    def save_figure(self, acc, val_acc, loss, val_loss):
         plt.figure(figsize=(18, 10))
         plt.plot(acc)
         plt.plot(val_acc)
@@ -408,24 +415,31 @@ class Translator():
 
 
 if __name__ == '__main__':
-    language = sys.argv[1]
-    model_name=sys.argv[2]
-    epochs=sys.argv[3] if len(sys.argv)>3 else 5
-    subset=int(sys.argv[4]) if len(sys.argv)>4 else 10000
-    force_rebuild=sys.argv[5] if len(sys.argv)>5 else False
+    # language = sys.argv[1]
+    # model_name=sys.argv[2]
+    # epochs=sys.argv[3] if len(sys.argv)>3 else 5
+    # subset=int(sys.argv[4]) if len(sys.argv)>4 else 10000
+    # force_rebuild=sys.argv[5] if len(sys.argv)>5 else False
 
     languages = {'French' :{'name':'Français', 's3_file':'LanguageTexts/fra.txt', 'prefix': 'fr_to_en', 'path':'models/fr_to_en/'},
                 'German' : {'name':'Deutsch', 's3_file':'LanguageTexts/deu.txt', 'prefix': 'de_to_en', 'path':'models/de_to_en/'},
                 'Italian' : {'name':'Italiano', 's3_file':'LanguageTexts/ita.txt', 'prefix': 'it_to_en','path':'models/it_to_en/'},
-                'Spanish' : {'name':'Español', 's3_file':'LanguageTexts/esp.txt', 'prefix': 'es_to_en','path':'models/es_to_en/'}}
+                'Spanish' : {'name':'Español', 's3_file':'LanguageTexts/esp.txt', 'prefix': 'es_to_en','path':'models/es_to_en/'},
+                'Danish' : {'name':'Español', 's3_file':'LanguageTexts/dan.txt', 'prefix': 'dk_to_en','path':'models/dk_to_en/'},
+                'Turkish' : {'name':'Türk', 's3_file':'LanguageTexts/tur.txt', 'prefix': 'tr_to_en','path':'models/tr_to_en/'}}
 
-    print(languages[language])
 
-    description = 'Simple, almost linear preprocessing with five epochs for testing'
-    German = Model(language=languages[language], model_name=model_name, description=description, force_rebuild=force_rebuild)
+    subset = 50000
+    description = 'Basic test with 35 epochs'
+    model_name = 'basic_50K_35E'
+    epochs = 35
 
-    German.get_data(subset=subset)
-    German.build_model(epochs=int(epochs))
+    for lang in languages:
+        print('Processing {}'.format(lang))
+        model = Model(language=languages[lang], model_name=model_name, description=description)
+        model.get_data(subset=subset)
+        model.build_model(epochs=int(epochs))
+        clear_session()
 
     # model_pref_path = lang_sources[lang]['model_pref_path']
     # print(model_pref_path)

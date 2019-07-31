@@ -14,7 +14,7 @@
 }
 
 html {
-/*   font-family: "Lucinda Sans", sans-serif; */
+  font-family: "Lucinda Sans", sans-serif;
 }
 
 .header {
@@ -32,17 +32,19 @@ html {
   padding: 0;
 }
 
-.menu li {
+.menu .select {
   padding: 8px;
+  width:100%;
   margin-bottom: 7px;
   background-color: #f6e7ff;
   color: #000000;
   box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
 }
 
-.menu li:hover {
+.menu .select:hover {
   background-color: #f0dfff;
 }
+
 
 .window {
 	width:100%;
