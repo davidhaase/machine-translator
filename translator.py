@@ -430,9 +430,9 @@ def evaluate_model(model, tokenizer, sources, raw_dataset):
     return blue1, blue2, blue3, blue4
 
 class Translator():
-    def __init__(self, model_pref_path):
+    def __init__(self, model_prefs):
         try:
-            self.preferences = pickle.load(open(model_pref_path, 'rb'))
+            self.preferences = model_prefs
             #dict.preferences = {'model_path': '',
             #                   'source_tokenizer': keras_obj,
             #                   'source_max_length': int,

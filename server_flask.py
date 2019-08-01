@@ -25,7 +25,7 @@ from utils import S3Bucket
 
 # Session scope variables
 app = Flask(__name__)
-model_id = 'basic_50K_35E/'
+model_id = 'basic_75K_35E_fixed/'
 lang_prefix = {'French':'fr_to_en/',
                 'German':'de_to_en/',
                 'Italian':'it_to_en/',
