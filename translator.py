@@ -302,14 +302,15 @@ class Model():
         val_loss = []
 
         total = len(self.train_X)
+        test_total = len(self.test_X)
 
         start = 0
-        interval = 10000
+        interval = 15000
         end = start + interval
         steps = total/interval
 
         test_start = 0
-        test_interval = 1000
+        test_interval = 1500
         test_end = test_start + test_interval
         step = 0
         while end < total:
@@ -334,8 +335,8 @@ class Model():
 
         train_X = self.train_X[start:total]
         train_y = self.train_y[start:total]
-        test_X = self.test_X[start:total]
-        test_y = self.test_y[start:total]
+        test_X = self.test_X[test_start:test_total]
+        test_y = self.test_y[test_start:test_total]
         history = model.fit(train_X, train_y, epochs=epochs, batch_size=64, validation_data=(test_X, test_y), callbacks=[checkpoint], verbose=2)
         acc += list(history.history['acc'])
         val_acc += list(history.history['val_acc'])
@@ -482,16 +483,14 @@ if __name__ == '__main__':
     #             'Spanish' : {'name':'Español', 's3_file':'LanguageTexts/esp.txt', 'prefix': 'es_to_en','path':'models/es_to_en/'},
     #             'Danish' : {'name':'Español', 's3_file':'LanguageTexts/dan.txt', 'prefix': 'dk_to_en','path':'models/dk_to_en/'},
     #             'Turkish' : {'name':'Türk', 's3_file':'LanguageTexts/tur.txt', 'prefix': 'tr_to_en','path':'models/tr_to_en/'}}
-    languages = {'French' :{'name':'Français', 's3_file':'LanguageTexts/fra.txt', 'prefix': 'fr_to_en', 'path':'models/fr_to_en/'},
-                'German' : {'name':'Deutsch', 's3_file':'LanguageTexts/deu.txt', 'prefix': 'de_to_en', 'path':'models/de_to_en/'},
+    languages = {'German' : {'name':'Deutsch', 's3_file':'LanguageTexts/deu.txt', 'prefix': 'de_to_en', 'path':'models/de_to_en/'},
                 'Italian' : {'name':'Italiano', 's3_file':'LanguageTexts/ita.txt', 'prefix': 'it_to_en','path':'models/it_to_en/'},
                 'Spanish' : {'name':'Español', 's3_file':'LanguageTexts/esp.txt', 'prefix': 'es_to_en','path':'models/es_to_en/'},
-                'Danish' : {'name':'Español', 's3_file':'LanguageTexts/dan.txt', 'prefix': 'dk_to_en','path':'models/dk_to_en/'},
                 'Turkish' : {'name':'Türk', 's3_file':'LanguageTexts/tur.txt', 'prefix': 'tr_to_en','path':'models/tr_to_en/'}}
 
-    subset = 50000
+    subset = 75000
     description = 'Basic word clean-up; 50,000 sentences, 35 epochs of 10,000 batches'
-    model_name = 'basic_50K_35E_fixed'
+    model_name = 'basic_75K_35E_fixed'
     epochs = 35
 
 
