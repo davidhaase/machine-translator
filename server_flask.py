@@ -38,6 +38,23 @@ lang_options = [ {"Label": "Deutsch", "Value": "German", "Selected": False},
             {"Label": "Türk", "Value": "Turkish", "Selected": False},
             {"Label": "Español", "Value": "Spanish", "Selected": False}]
 
+bleus = {
+    "French" : "1-grams: 0.6588</br>bi-grams: 0.5447</br>tri-grams: 0.4940</br>4-grams: 0.3815</br><hr>loss: 0.2570</br>acc: 0.9801</br>val_loss: 2.1694</br>val_acc: 0.7039",
+    "German" : "1-grams: 0.6703</br>bi-grams: 0.5568</br>tri-grams: 0.5047</br>4-grams: 0.3897</br><hr>loss: 0.2378</br>acc: 0.9813</br>val_loss: 2.1694</br>val_acc: 0.7024",
+    "Italian" : "1-grams: 0.7932</br>bi-grams: 0.7146</br>tri-grams: 0.6588</br>4-grams: 0.4915</br><hr>loss: 0.1287</br>acc: 0.9840</br>val_loss: 1.0991</br>val_acc: 0.8213",
+    "Spanish" : "1-grams: 0.6442</br>bi-grams: 0.5233</br>tri-grams: 0.4715</br>4-grams: 0.3637</br><hr>loss: 0.2208</br>acc: 0.9840</br>val_loss: 2.2772</br>val_acc: 0.7074",
+    "Turkish" : "1-grams: 0.6796</br>bi-grams: 0.5705</br>tri-grams: 0.5154</br>4-grams: 0.3732</br><hr>loss: 0.2303</br>acc: 0.9767</br>val_loss: 2.1991</br>val_acc: 0.6970"
+}
+
+lang_details = {
+    "German" : "German Vocabulary Size: 13,834</br>German Max Sentence Length: 17</br><hr>English Vocabulary Size: 7,910</br>English Max Sentence Length: 8",
+    "French" : "French Vocabulary Size: 15,378</br>French Max Sentence Length: 14</br><hr>English Vocabulary Size: 7,468</br>English Max Sentence Length: 8",
+    "Italian" : "Italian Vocabulary Size: 11772</br>Italian Max Sentence Length: 17</br><hr>English Vocabulary Size: 5296</br>English Max Sentence Length: 7",
+    "Spanish" : "Spanish Vocabulary Size: 16,831</br>Spanish Max Sentence Length: 14</br><hr>English Vocabulary Size: 8,943</br>English Max Sentence Length: 10",
+    "Turkish" : "Turkish Vocabulary Size: 23,521</br>Turkish Max Sentence Length: 9</br><hr>English Vocabulary Size: 8,183</br>English Max Sentence Length: 7"
+
+}
+
 lang_index = 'French'
 
 s3 = S3Bucket()
@@ -54,7 +71,13 @@ def set_language(lang_index):
 # HTML methods
 @app.route('/')
 def home_screen():
-    return render_template('index.html', translation='', options=lang_options, selected_lang=get_selected(lang_options))
+    # set_language(lang_index)
+    return render_template('index.html',
+                            translation='',
+                            options=lang_options,
+                            selected_lang=get_selected(lang_options),
+                            lang_details=lang_details[lang_index],
+                            bleu_score=bleus[lang_index])
 
 @app.route('/result',methods = ['POST', 'GET'])
 def translate():
@@ -91,7 +114,9 @@ def translate():
                                     input_text='Unable to load language model: ' + lang_index,
                                     translation=translation_error,
                                     selected_lang=get_selected(lang_options),
-                                    options=lang_options)
+                                    options=lang_options,
+                                    lang_details=lang_details[lang_index],
+                                    bleu_score=bleus[lang_index])
 
         # A model exists, so use it and translate away!
         T = Translator(model_prefs)
@@ -104,7 +129,9 @@ def translate():
                                 input_text=input,
                                 translation=translation,
                                 selected_lang=get_selected(lang_options),
-                                options=lang_options)
+                                options=lang_options,
+                                lang_details=lang_details[lang_index],
+                                bleu_score=bleus[lang_index])
 
         # for option in options:
         #     option["Selected"] = True if option["Value"] == lang_index else False

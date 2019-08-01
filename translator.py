@@ -483,8 +483,7 @@ if __name__ == '__main__':
     #             'Spanish' : {'name':'Español', 's3_file':'LanguageTexts/esp.txt', 'prefix': 'es_to_en','path':'models/es_to_en/'},
     #             'Danish' : {'name':'Español', 's3_file':'LanguageTexts/dan.txt', 'prefix': 'dk_to_en','path':'models/dk_to_en/'},
     #             'Turkish' : {'name':'Türk', 's3_file':'LanguageTexts/tur.txt', 'prefix': 'tr_to_en','path':'models/tr_to_en/'}}
-    languages = {'Spanish' : {'name':'Español', 's3_file':'LanguageTexts/esp.txt', 'prefix': 'es_to_en','path':'models/es_to_en/'},
-                'Turkish' : {'name':'Türk', 's3_file':'LanguageTexts/tur.txt', 'prefix': 'tr_to_en','path':'models/tr_to_en/'}}
+    languages = {'Turkish' : {'name':'Türk', 's3_file':'LanguageTexts/tur.txt', 'prefix': 'tr_to_en','path':'models/tr_to_en/'}}
 
     subset = 75000
     description = 'Basic word clean-up; 50,000 sentences, 35 epochs of 10,000 batches'
