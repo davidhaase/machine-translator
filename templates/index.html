@@ -8,31 +8,30 @@
 		<div class="header">
 			<h1>BABEL</h1>
 		</div>
-
-
 		<div class="row">
-			<form id="Input_Area" action="http://localhost:5000/result" method="POST">
+
 			<div class="col-3 col-s-3 menu">
-<!-- 				<h2 id="content-header">&nbsp;</h2> -->
-				<!-- <form action="http://localhost:5000/set_language" method="POST"> -->
-					<div style="width:100%;">
-						<p><i>Choose a language to start with:</i></p>
-						<select id="lang_select" onchange="changeLang()" name="Language">
+				<div style="width:100%;">
+					 <div class="aside">
+	 					<h3>Corpus Details</h3>
+	 					<p id="details"></p>
+	 				</div>
+				 </div>
+			</div>
+			<div class="col-6 col-s-9">
+				<form id="Input_Area" action="http://localhost:5000/result" method="POST">
+					<p><i>Choose a language to start with:</i></p>
+					<select id="lang_select" class="select-css" onchange="changeLang()" name="Language">
 					 {% for option in options %}
 						 <option value="{{ option.Value }}"{% if option.Selected %} selected="selected"{% endif %}>{{ option.Label }}</option>
 					 {% endfor %}
-					 </select>
-				 </div>
-				<!-- </form> -->
-			</div>
-			<div class="col-6 col-s-9">
-				<div>
+				 </select>
+				 <div>
 						<i><p id="instruction">Enter some text in French to translate:</p></i>
-					 	<textarea name="Input_Text" style="width:100%;">{{input_echo}}</textarea>
-						<p><input type = "submit" value = "submit" /></p>
-				  <!-- </form> -->
+					 	<textarea name="Input_Text" style="width:100%;" rows="6">{{input_echo}}</textarea>
+						<p><input class="select-css" type="submit" value="submit" style="width:20%;"/></p>
 				</div>
-			</form>
+				</form>
 				<div id="Project2">
 					<h5>Input Text</h5>
 					<h3>{{input_text}}</h3>
@@ -41,12 +40,9 @@
 				</div>
 			</div>
 			<div class="col-3 col-s-12">
-				<div id="BLEU" class="aside">
+				<div class="aside">
 					<h3>BLEU Scores</h3>
 					<p id="BLEU"></p>
-					<!-- {% for bleu_score in bleu_scores %}
-						<p>{{bleu_score}}</p>
-					{% endfor %} -->
 				</div>
 			</div>
 
@@ -56,16 +52,26 @@
 		</div>
 		<script>
 			function changeLang() {
-				var langs = {
-					"French" : "Total sentences: 75,000 (out of170,190)",
-					"German" : "deutsch",
-					"Italian" : "italiano",
-					"Spanish" : "español",
+				var bleus = {
+					"French" : "1-grams: 0.6588</br>bi-grams: 0.5447</br>tri-grams: 0.4940</br>4-grams: 0.3815</br><hr>loss: 0.2570</br>acc: 0.9801</br>val_loss: 2.1694</br>val_acc: 0.7039",
+					"German" : "1-grams: 0.6703</br>bi-grams: 0.5568</br>tri-grams: 0.5047</br>4-grams: 0.3897</br><hr>loss: 0.2378</br>acc: 0.9813</br>val_loss: 2.1694</br>val_acc: 0.7024",
+					"Italian" : "1-grams: 0.7932</br>bi-grams: 0.7146</br>tri-grams: 0.6588</br>4-grams: 0.4915</br><hr>loss: 0.1287</br>acc: 0.9840</br>val_loss: 1.0991</br>val_acc: 0.8213",
+					"Spanish" : "75,000 out of 123,376 sentences</br>Spanish Vocabuary Size: 16,831",
 					"Turkish" : "türk"
+				};
+
+				var lang_details = {
+					"German" : "German Vocabulary Size: 13,834</br>German Max Sentence Length: 17</br>English Vocabulary Size: 7,910</br>English Max Sentence Length: 8",
+					"French" : "French Vocabulary Size: 15,378</br>French Max Sentence Length: 14</br>English Vocabulary Size: 7,468</br>English Max Sentence Length: 8",
+					"Italian" : "Italian Vocabulary Size: 11772</br>Italian Max Sentence Length: 17</br>English Vocabulary Size: 5296</br>English Max Sentence Length: 7",
+					"Spanish" : "75,000 out of 123,376 sentences</br>Spanish Vocabuary Size: 16,831",
+					"Turkish" : "türk"
+
 				};
 			  var x = document.getElementById("lang_select").value;
 			  document.getElementById("instruction").innerHTML = "Enter some text in " + x + " to translate:";
-				document.getElementById("BLEU").innerHTML = langs[x];
+				document.getElementById("BLEU").innerHTML = bleus[x];
+				document.getElementById("details").innerHTML = lang_details[x];
 			}
 		</script>
 	</body>
