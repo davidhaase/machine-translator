@@ -33,17 +33,22 @@ This project had four main goals which are complete:
 * CSS
 
 ## Project Description
+### Neural Net
 This project investigates how NLP _encoding techniques_ can help improve machine translations.  In order to start that investigation, a basic machine translation model must be built as a first step.  In this case, I used the following Keras layers: LSTM, Embedding, RepeatVector and TimeDistributed.  
 
+### NLP Encoding
 Also for the initial baseline, I implemented the most simple text-cleaning and encoding methods:  
-** all lower-case, no punctutation, no funny characters, etc.  
-** keras.tokenizer.fit_to_sequences()
+* all lower-case, no punctutation, no funny characters, etc.  
+* keras.tokenizer.texts_to_sequences()
 
-The end-goal however, is to make this encoding step much more sophisticated in terms of contemporary technologies:
+The end-goal however, is to make this encoding step much more sophisticated in terms of contemporary technologies. Can sophisticated encodings improved translation accuracy?
 * Gensim's Word2Vec
 * Spacy's POS, entities, etc.
 
-(Provide more detailed overview of the project.  Talk a bit about your data sources and what questions and hypothesis you are exploring. What specific data analysis/visualization and modelling work are you using to solve the problem? What blockers and challenges are you facing?  Feel free to number or bullet point things here)
+### Data Sources
+The training data for this project came from extremely clean and pre-translated sentence pairs published by the Tatoeba Project
+* http://www.manythings.org/anki/ 
+I limited the number of translated phrases to 75,000 for each language pair.  
 
 ## Needs of this project
 
