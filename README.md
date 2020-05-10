@@ -1,5 +1,5 @@
 # Machine Translation
-The machine translator is an exploratory project that implements neural nets in Python to create English-language translations from phrases entered in French, Italian, Spanish, German or Turkish.  Translation models for each language are first built asynchronously from a deep-learning Keras neural network built using high-powered AWS E2 processors. These models are in turn leveraged interactively in real-time from a webpage spun up on the local-host with Flask. This project serves as my final independent student project for the Flatiron School Data Science curriculum.  
+The machine translator is an exploratory project that implements neural nets in Python to create English-language translations from phrases entered in French, Italian, Spanish, German or Turkish.  Translation models for each language are first trained asynchronously from a deep-learning Keras neural network built using high-powered AWS EC2 processors. These models are in turn leveraged interactively in real-time from a webpage spun up on the local-host with Flask. This project serves as my final independent student project for the Flatiron School Data Science curriculum.  
 
 #### -- Project Status: [Inactive]
 
@@ -57,8 +57,7 @@ The training data for this project came from extremely clean and pre-translated 
 - Python frontend developers (flask, HTML, CSS, JS)
 
 ## Getting Started
-
-1. TK
+* TK
 
 ## Featured Notebooks/Analysis/Deliverables
 * TK
