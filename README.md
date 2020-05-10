@@ -1,7 +1,7 @@
 # Machine Translation
 Python Flask web app which hosts a deep-learning Keras neural network to translate simple phrases in French, Italian, Spanish, German and Turkish into English.  This project serves as my final independent student project for the Flatiron School Data Science curriculum.  
 
-#### -- Project Status: [Active]
+#### -- Project Status: [Inactive]
 
 ## Project Intro/Objective
 This project had four main goals which are complete:
